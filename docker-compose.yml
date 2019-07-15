@@ -1,0 +1,61 @@
+version: "3"
+services:
+    redis:
+        image: "redis:alpine"
+        container_name: redis-1
+        command: redis-server --requirepass secret
+        ports:
+            - "6377:6379"
+        networks:
+            nmpr-network:
+                ipv4_address: 191.167.1.99
+    php-fpm7.2:
+        #      image: php:7.2
+        build:
+            context: ./php
+        container_name: php-fpm7.2-1
+        expose:
+            - "9001"
+        volumes:
+            - /opt/logs:/opt/logs
+            # 项目目录映射
+            - /data/swoole/test-1:/usr/share/nginx/html/swoole/test-1
+            # php配置
+            #- ./php/php.ini:/usr/local/etc/php/php.ini
+        #      networks:
+        #        nmpr-network:
+        #          ipv4_address: 191.167.100.100
+    nginx:
+        image: nginx:latest
+        container_name: nginx-1
+        depends_on:
+            - php-fpm7.2
+        volumes:
+            # 项目目录映射
+            - /data/swoole/test-1:/usr/share/nginx/html/swoole/test-1
+            # nginx配置映射
+            - ./nginx/conf.d/view-test.conf:/etc/nginx/conf.d/view-test.conf
+        links:
+            - php-fpm7.2
+        ports:
+            - "80:80"
+            - "2003:2003"
+    mysql:
+        image: mysql:5.7
+        container_name: mysql-1
+        ports:
+            - 2306:3306
+        volumes:
+            - ./mysql/data:/var/lib/mysql
+            - ./mysql/conf.d/mysqld.cnf:/etc/mysql/mysql.conf.d/mysqld.cnf
+        environment:
+            MYSQL_ROOT_PASSWORD: secret
+        restart: always
+        networks:
+            nmpr-network:
+                ipv4_address: 191.167.1.98
+networks:
+    nmpr-network:
+        ipam:
+            config:
+                - subnet: 191.167.0.0/16
