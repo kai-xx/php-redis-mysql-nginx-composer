@@ -12,41 +12,65 @@ services:
     php-fpm7.2:
         #      image: php:7.2
         build:
-            context: ./php
+            context: ./php/php72
         container_name: php-fpm7.2-1
         expose:
-            - "9001"
+            - "9000"
         volumes:
             - /opt/logs:/opt/logs
             # 项目目录映射
             - /data/swoole/test-1:/usr/share/nginx/html/swoole/test-1
             # php配置
             #- ./php/php.ini:/usr/local/etc/php/php.ini
-        #      networks:
-        #        nmpr-network:
-        #          ipv4_address: 191.167.100.100
+#        networks:
+#            nmpr-network:
+#              ipv4_address: 191.167.100.100
+    php-fpm5.6:
+        build:
+            context: ./php/php56
+        container_name: php-fpm5.6-1
+        expose:
+            - "9000"
+        volumes:
+            - /opt/logs:/opt/logs
+            # 项目目录映射
+            - /data/swoole:/usr/share/nginx/html/swoole
+            # php配置
+            #- ./php/php.ini:/usr/local/etc/php/php.ini
+#        networks:
+#            nmpr-network:
+#              ipv4_address: 191.167.100.101
     nginx:
         image: nginx:latest
         container_name: nginx-1
         depends_on:
             - php-fpm7.2
+            - php-fpm5.6
         volumes:
             # 项目目录映射
             - /data/swoole/test-1:/usr/share/nginx/html/swoole/test-1
             # nginx配置映射
-            - ./nginx/conf.d/view-test.conf:/etc/nginx/conf.d/view-test.conf
+            - ./nginx/conf.d/view-test-5.conf:/etc/nginx/conf.d/view-test-5.conf
+            - ./nginx/conf.d/view-test-7.conf:/etc/nginx/conf.d/view-test-7.conf
+            # log映射
+            - ./nginx/log:/var/log/nginx
         links:
             - php-fpm7.2
+            - php-fpm5.6
         ports:
             - "80:80"
             - "2003:2003"
+            - "2103:2103"
+#        networks:
+#            nmpr-network:
+#              ipv4_address: 191.167.100.102
     mysql:
         image: mysql:5.7
         container_name: mysql-1
         ports:
             - 2306:3306
         volumes:
-            - ./mysql/data:/var/lib/mysql
+            - ./mysql/data:/var/lib/mysql:rw
             - ./mysql/conf.d/mysqld.cnf:/etc/mysql/mysql.conf.d/mysqld.cnf
         environment:
             MYSQL_ROOT_PASSWORD: secret
